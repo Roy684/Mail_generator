@@ -14,16 +14,9 @@ def create_streamlit_app(llm, portfolio, clean_text):
 
     if submit_button:
         try:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-            }
+    
+            loader = WebBaseLoader(web_paths=[url_input])
             
-            loader = WebBaseLoader(
-                web_paths=[url_input],
-                requests_per_second=2,
-                requests_kwargs={"headers": headers}
-            )
-            # loader = WebBaseLoader([url_input])
             data = clean_text(loader.load().pop().page_content)
             portfolio.load_portfolio()
             jobs = llm.extract_jobs(data)
