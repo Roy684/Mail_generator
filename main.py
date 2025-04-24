@@ -1,0 +1,43 @@
+import os
+import streamlit as st
+from langchain_community.document_loaders import WebBaseLoader
+
+from chains import Chain
+from portfolio import Portfolio
+from utils import clean_text
+
+
+def create_streamlit_app(llm, portfolio, clean_text):
+    st.title("📧 Cold Mail Generator")
+    url_input = st.text_input("Enter a URL:", value="https://sahanjournal.com/listings/marketplace/web-developer/")
+    submit_button = st.button("Submit")
+
+    if submit_button:
+        try:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+            
+            loader = WebBaseLoader(
+                web_paths=[url_input],
+                requests_per_second=2,
+                requests_kwargs={"headers": headers}
+            )
+            # loader = WebBaseLoader([url_input])
+            data = clean_text(loader.load().pop().page_content)
+            portfolio.load_portfolio()
+            jobs = llm.extract_jobs(data)
+            for job in jobs:
+                skills = job.get('skills', [])
+                links = portfolio.query_links(skills)
+                email = llm.write_mail(job, links)
+                st.code(email, language='markdown')
+        except Exception as e:
+            st.error(f"An Error Occurred: {e}")
+
+
+if __name__ == "__main__":
+    chain = Chain()
+    portfolio = Portfolio()
+    st.set_page_config(layout="wide", page_title="Cold Email Generator", page_icon="📧")
+    create_streamlit_app(chain, portfolio, clean_text)
